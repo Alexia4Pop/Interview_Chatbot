@@ -55,7 +55,7 @@ export async function POST(request: Request) {
             role, type, level,
             techstack: techstack ? techstack.split(',') : [],
             questions: parsedQuestions,
-            userId: userid,
+            userId: userid || "guest_user",
             finalized: true,
             coverImage: getRandomInterviewCover(),
             createdAt: new Date().toISOString(),
@@ -63,7 +63,10 @@ export async function POST(request: Request) {
 
         await db.collection("interviews").add(interview);
 
-        return Response.json({success: true}, {status: 200});
+        return Response.json({
+            success: true,
+            questions: parsedQuestions
+        }, {status: 200});
     } catch(err) {
         console.error("Error in POST", err);
         return Response.json({ success: false, error: err }, { status: 500});
