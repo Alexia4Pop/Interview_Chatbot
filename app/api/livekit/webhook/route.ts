@@ -7,6 +7,13 @@ const receiver = new WebhookReceiver(
     process.env.LIVEKIT_API_SECRET!
 );
 
+export async function GET() {
+    return NextResponse.json({
+        status: "Webhook URL is active",
+        timestamp: new Date().toISOString()
+    });
+}
+
 export async function POST(request: Request) {
     console.log("🟢 Webhook de la LiveKit primit!");
 
