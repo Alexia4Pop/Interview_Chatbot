@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    console.log("🔵 Cerere primita la /api/vapi/generate");
+    console.log("🔵 Cerere primita la /api/livekit/webhook");
     //const { type, role, level, techstack, amount, userid } = await request.json();
 
     try {
