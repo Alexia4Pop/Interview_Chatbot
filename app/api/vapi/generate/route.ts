@@ -3,13 +3,28 @@ import { google } from "@ai-sdk/google";
 
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
+import { groq } from "@ai-sdk/groq";
 
 export async function POST(request: Request) {
-    const { type, role, level, techstack, amount, userid } = await request.json();
+    //const { type, role, level, techstack, amount, userid } = await request.json();
+
+
+    // Această linie "despachetează" datele indiferent de cum le trimite Vapi
+
 
     try {
+        const body = await request.json();
+        const args = body.message?.toolCall?.arguments ||
+            body.message?.toolCalls?.[0]?.function?.arguments ||
+            body;
+
+        const { type, role, level, techstack, amount, userid } = args;
+
+        console.log(`--- DATE EXTRASE ---`);
+        console.log(`Role: ${role}, Level: ${level}, Amount: ${amount}, UserID: ${userid}`);
+
         const { text: questions } = await generateText({
-            model: google("gemini-2.0-flash-001"),
+            model: google("llama-3.3-70b-versatile"),
             prompt: `Prepare questions for a job interview.
         The job role is ${role}.
         The job experience level is ${level}.
@@ -25,12 +40,17 @@ export async function POST(request: Request) {
     `,
         });
 
+        console.log("--- ÎNTREBĂRI GENERATE DE GEMINI ---");
+        console.log(questions);
+
+        const cleanedQuestions = questions.replace(/```json/g, "").replace(/```/g, "").trim();
+
         const interview = {
             role: role,
             type: type,
             level: level,
             techstack: techstack.split(","),
-            questions: JSON.parse(questions),
+            questions: JSON.parse(cleanedQuestions),
             userId: userid,
             finalized: true,
             coverImage: getRandomInterviewCover(),

@@ -145,6 +145,9 @@ const Agent = ({
         vapi.stop();
     };
 
+    const latestMessages = messages[messages.length - 1]?.content;
+    const isCallInactiveOrFinished = callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
+
     return (
         <>
             <div className="call-view">
@@ -197,18 +200,16 @@ const Agent = ({
             <div className="w-full flex justify-center">
                 {callStatus !== "ACTIVE" ? (
                     <button className="relative btn-call" onClick={() => handleCall()}>
-            <span
-                className={cn(
-                    "absolute animate-ping rounded-full opacity-75",
-                    callStatus !== "CONNECTING" && "hidden"
-                )}
-            />
+                        <span
+                            className={cn(
+                                "absolute animate-ping rounded-full opacity-75",
+                                callStatus !== "CONNECTING" && "hidden"
+                            )}
+                        />
 
-                        <span className="relative">
-              {callStatus === "INACTIVE" || callStatus === "FINISHED"
-                  ? "Call"
-                  : ". . ."}
-            </span>
+                                    <span className="relative">
+                                      {isCallInactiveOrFinished ? "Call" : ". . ."}
+                                    </span>
                     </button>
                 ) : (
                     <button className="btn-disconnect" onClick={() => handleDisconnect()}>
