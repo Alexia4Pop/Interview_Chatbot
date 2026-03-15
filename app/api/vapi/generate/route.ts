@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         console.log(`Role: ${role}, Level: ${level}, Amount: ${amount}, UserID: ${userid}`);
 
         const { text: questions } = await generateText({
-            model: google("llama-3.3-70b-versatile"),
+            model: groq("llama-3.3-70b-versatile"),
             prompt: `Prepare questions for a job interview.
         The job role is ${role}.
         The job experience level is ${level}.
