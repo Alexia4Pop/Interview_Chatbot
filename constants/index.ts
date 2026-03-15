@@ -1,6 +1,6 @@
+import { CreateAssistantDTO } from "@vapi-ai/web/dist/api";
 import { z } from "zod";
 
-// Mappings rămâne neschimbat (util pentru iconițe/etichete)
 export const mappings = {
   "react.js": "react",
   reactjs: "react",
@@ -97,36 +97,62 @@ export const mappings = {
   "aws amplify": "amplify",
 };
 
-/**
- * Configurația pentru Agentul LiveKit.
- * Am transformat-o într-un obiect simplu deoarece LiveKit gestionează
- * componentele (STT, TTS, LLM) separat sau prin dashboard.
- */
-export const interviewer = {
+export const interviewer: CreateAssistantDTO = {
   name: "Interviewer",
   firstMessage:
       "Hello! Thank you for taking the time to speak with me today. I'm excited to learn more about you and your experience.",
-  systemPrompt: `You are a professional job interviewer conducting a real-time voice interview with a candidate. Your goal is to assess their qualifications, motivation, and fit for the role.
+  transcriber: {
+    provider: "deepgram",
+    model: "nova-2",
+    language: "en",
+  },
+  voice: {
+    provider: "11labs",
+    voiceId: "sarah",
+    stability: 0.4,
+    similarityBoost: 0.8,
+    speed: 0.9,
+    style: 0.5,
+    useSpeakerBoost: true,
+  },
+  model: {
+    provider: "openai",
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: `You are a professional job interviewer conducting a real-time voice interview with a candidate. Your goal is to assess their qualifications, motivation, and fit for the role.
 
 Interview Guidelines:
 Follow the structured question flow:
 {{questions}}
 
 Engage naturally & react appropriately:
-- Listen actively to responses and acknowledge them before moving forward.
-- Ask brief follow-up questions if a response is vague or requires more detail.
-- Keep the conversation flowing smoothly while maintaining control.
+Listen actively to responses and acknowledge them before moving forward.
+Ask brief follow-up questions if a response is vague or requires more detail.
+Keep the conversation flowing smoothly while maintaining control.
+Be professional, yet warm and welcoming:
 
-Professionalism:
-- Use official yet friendly language.
-- Keep responses concise and to the point (voice conversation).
-- Avoid robotic phrasing.
+Use official yet friendly language.
+Keep responses concise and to the point (like in a real voice interview).
+Avoid robotic phrasing—sound natural and conversational.
+Answer the candidate’s questions professionally:
+
+If asked about the role, company, or expectations, provide a clear and relevant answer.
+If unsure, redirect the candidate to HR for more details.
 
 Conclude the interview properly:
-- Thank the candidate for their time.
-- End on a polite and positive note.
+Thank the candidate for their time.
+Inform them that the company will reach out soon with feedback.
+End the conversation on a polite and positive note.
 
-Technical Note: This is a voice conversation. Keep responses short and simple. Don't ramble.`,
+
+- Be sure to be professional and polite.
+- Keep all your responses short and simple. Use official language, but be kind and welcoming.
+- This is a voice conversation, so keep your responses short, like in a real conversation. Don't ramble for too long.`,
+      },
+    ],
+  },
 };
 
 export const feedbackSchema = z.object({
@@ -178,8 +204,7 @@ export const interviewCovers = [
   "/yahoo.png",
 ];
 
-// Dummy data pentru UI
-export const dummyInterviews: any[] = [
+export const dummyInterviews: Interview[] = [
   {
     id: "1",
     userId: "user1",

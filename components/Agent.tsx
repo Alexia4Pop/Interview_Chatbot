@@ -1,18 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-    Room,
-    RoomEvent,
-    Participant,
-    TranscriptionSegment
-} from "livekit-client";
-import { RoomAudioRenderer } from "@livekit/components-react";
 
 import { cn } from "@/lib/utils";
-//import { interviewer } from "@/constants";
+import { vapi } from "@/lib/vapi.sdk";
+import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
 enum CallStatus {
@@ -41,59 +35,61 @@ const Agent = ({
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [lastMessage, setLastMessage] = useState<string>("");
 
-    // Referință stabilă pentru instanța de LiveKit Room
-    const roomInstanceRef = useRef<Room | null>(null);
-
-    // Inițializare Room și Evenimente
     useEffect(() => {
-        const room = new Room();
-        roomInstanceRef.current = room;
-
-        const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
-        const onCallEnd = () => setCallStatus(CallStatus.FINISHED);
-
-        const onTranscription = (segments: TranscriptionSegment[], participant?: Participant) => {
-            segments.forEach((segment) => {
-                if (segment.final) {
-                    setMessages((prev) => [
-                        ...prev,
-                        {
-                            role: participant?.isAgent ? "assistant" : "user",
-                            content: segment.text
-                        }
-                    ]);
-                }
-            });
+        const onCallStart = () => {
+            setCallStatus(CallStatus.ACTIVE);
         };
 
-        const setupParticipantSpeech = (participant: Participant) => {
-            participant.on("isSpeakingChanged", (speaking: boolean) => {
-                // Dacă agentul vorbește, activăm animația la avatarul AI
-                if (!participant.isLocal) {
-                    setIsSpeaking(speaking);
-                }
-            });
+        const onCallEnd = () => {
+            setCallStatus(CallStatus.FINISHED);
         };
 
-        room.on(RoomEvent.Connected, onCallStart);
-        room.on(RoomEvent.Disconnected, onCallEnd);
-        room.on(RoomEvent.TranscriptionReceived, onTranscription);
-        room.on(RoomEvent.ParticipantConnected, setupParticipantSpeech);
+        const onMessage = (message: Message) => {
+            if (message.type === "transcript" && message.transcriptType === "final") {
+                const newMessage = { role: message.role, content: message.transcript };
+                setMessages((prev) => [...prev, newMessage]);
+            }
+        };
+
+        const onSpeechStart = () => {
+            console.log("speech start");
+            setIsSpeaking(true);
+        };
+
+        const onSpeechEnd = () => {
+            console.log("speech end");
+            setIsSpeaking(false);
+        };
+
+        const onError = (error: Error) => {
+            console.log("Error:", error);
+        };
+
+        vapi.on("call-start", onCallStart);
+        vapi.on("call-end", onCallEnd);
+        vapi.on("message", onMessage);
+        vapi.on("speech-start", onSpeechStart);
+        vapi.on("speech-end", onSpeechEnd);
+        vapi.on("error", onError);
 
         return () => {
-            room.disconnect();
-            room.removeAllListeners();
-            roomInstanceRef.current = null;
+            vapi.off("call-start", onCallStart);
+            vapi.off("call-end", onCallEnd);
+            vapi.off("message", onMessage);
+            vapi.off("speech-start", onSpeechStart);
+            vapi.off("speech-end", onSpeechEnd);
+            vapi.off("error", onError);
         };
     }, []);
 
-    // Logică Feedback și Afișare mesaje
     useEffect(() => {
         if (messages.length > 0) {
             setLastMessage(messages[messages.length - 1].content);
         }
 
         const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+            console.log("handleGenerateFeedback");
+
             const { success, feedbackId: id } = await createFeedback({
                 interviewId: interviewId!,
                 userId: userId!,
@@ -104,6 +100,7 @@ const Agent = ({
             if (success && id) {
                 router.push(`/interview/${interviewId}/feedback`);
             } else {
+                console.log("Error saving feedback");
                 router.push("/");
             }
         };
@@ -118,55 +115,45 @@ const Agent = ({
     }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
     const handleCall = async () => {
-        if (!roomInstanceRef.current) return;
-
         setCallStatus(CallStatus.CONNECTING);
 
-        try {
-            // Pasul 1: Obținere Token de la serverul tău
-            const response = await fetch("/api/livekit/token", {
-                method: "POST",
-                body: JSON.stringify({
-                    roomName: `interview-${userId}`,
-                    participantName: userName
-                }),
+        if (type === "generate") {
+            await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+                variableValues: {
+                    username: userName,
+                    userid: userId,
+                },
             });
+        } else {
+            let formattedQuestions = "";
+            if (questions) {
+                formattedQuestions = questions
+                    .map((question) => `- ${question}`)
+                    .join("\n");
+            }
 
-            const data = await response.json();
-            const livekitUrl = "wss://interviewaichatbot-p28xa6ge.livekit.cloud";
-
-            // Pasul 2: Conectare la Room
-            await roomInstanceRef.current.connect(livekitUrl, data.token);
-
-            // Pasul 3: Pornire microfon local
-            await roomInstanceRef.current.localParticipant.setMicrophoneEnabled(true);
-
-        } catch (error) {
-            console.error("Connection failed:", error);
-            setCallStatus(CallStatus.FINISHED);
+            await vapi.start(interviewer, {
+                variableValues: {
+                    questions: formattedQuestions,
+                },
+            });
         }
     };
 
     const handleDisconnect = () => {
-        if (roomInstanceRef.current) {
-            roomInstanceRef.current.disconnect();
-        }
         setCallStatus(CallStatus.FINISHED);
+        vapi.stop();
     };
 
     return (
         <>
-            {/* Esențial pentru a auzi sunetul agentului */}
-            {roomInstanceRef.current && (
-                <RoomAudioRenderer room={roomInstanceRef.current} />
-            )}
-
             <div className="call-view">
+                {/* AI Interviewer Card */}
                 <div className="card-interviewer">
                     <div className="avatar">
                         <Image
                             src="/ai-avatar.png"
-                            alt="AI"
+                            alt="profile-image"
                             width={65}
                             height={54}
                             className="object-cover"
@@ -176,14 +163,15 @@ const Agent = ({
                     <h3>AI Interviewer</h3>
                 </div>
 
+                {/* User Profile Card */}
                 <div className="card-border">
                     <div className="card-content">
                         <Image
                             src="/user-avatar.png"
-                            alt="User"
-                            width={120}
-                            height={120}
-                            className="rounded-full object-cover"
+                            alt="profile-image"
+                            width={539}
+                            height={539}
+                            className="rounded-full object-cover size-[120px]"
                         />
                         <h3>{userName}</h3>
                     </div>
@@ -207,22 +195,23 @@ const Agent = ({
             )}
 
             <div className="w-full flex justify-center">
-                {callStatus !== CallStatus.ACTIVE ? (
-                    <button className="relative btn-call" onClick={handleCall}>
-                        <span
-                            className={cn(
-                                "absolute animate-ping rounded-full opacity-75",
-                                callStatus !== CallStatus.CONNECTING && "hidden"
-                            )}
-                        />
+                {callStatus !== "ACTIVE" ? (
+                    <button className="relative btn-call" onClick={() => handleCall()}>
+            <span
+                className={cn(
+                    "absolute animate-ping rounded-full opacity-75",
+                    callStatus !== "CONNECTING" && "hidden"
+                )}
+            />
+
                         <span className="relative">
-                          {callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED
-                              ? "Call"
-                              : ". . ."}
-                        </span>
+              {callStatus === "INACTIVE" || callStatus === "FINISHED"
+                  ? "Call"
+                  : ". . ."}
+            </span>
                     </button>
                 ) : (
-                    <button className="btn-disconnect" onClick={handleDisconnect}>
+                    <button className="btn-disconnect" onClick={() => handleDisconnect()}>
                         End
                     </button>
                 )}

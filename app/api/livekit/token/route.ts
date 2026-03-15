@@ -1,40 +1,30 @@
-import { AccessToken } from "livekit-server-sdk";
-import { NextResponse } from "next/server";
+import { AccessToken, AgentDispatchClient } from 'livekit-server-sdk';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+// route.ts
+export async function POST(req: Request) {
+    const { roomName, participantName } = await req.json();
+
+    const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+        identity: `user_${Math.floor(Math.random() * 1000)}`, // Identitate simplă
+    });
+
+    at.addGrant({ room: roomName, roomJoin: true, canPublish: true, canSubscribe: true });
+
+    const dispatchClient = new AgentDispatchClient(
+        process.env.LIVEKIT_URL!.replace('wss://', 'https://'),
+        process.env.LIVEKIT_API_KEY!,
+        process.env.LIVEKIT_API_SECRET!
+    );
+
     try {
-        // CITIM roomName trimis de client, nu generăm unul nou aici!
-        const { participantName, roomName } = await request.json();
-
-        if (!participantName || !roomName) {
-            return NextResponse.json({ error: "Missing data (name or room)" }, { status: 400 });
-        }
-
-        const at = new AccessToken(
-            process.env.LIVEKIT_API_KEY,
-            process.env.LIVEKIT_API_SECRET,
-            {
-                // Identitate unică pentru tine
-                identity: `${participantName}-${Math.floor(Math.random() * 10000)}`,
-            }
-        );
-
-        at.addGrant({
-            roomJoin: true,
-            room: roomName, // Camera primită de la client
-            canPublish: true,
-            canSubscribe: true,
-            agent: true,
-        });
-
-        at.metadata = JSON.stringify({
-            agent_id: "CA_nzWTMQNbHNmk",
-            should_dispatch: true
-        });
-
-        return NextResponse.json({ token: await at.toJwt() });
-    } catch (error) {
-        console.error("Token Error:", error);
-        return NextResponse.json({ error: "Failed to generate token" }, { status: 500 });
+        // IMPORTANT: Folosim fix roomName-ul primit
+        await dispatchClient.createDispatch(roomName, 'CA_nzWTMQNbHNmk');
+        console.log(`🚀 Dispatch trimis în camera: ${roomName}`);
+    } catch (e) {
+        console.error("❌ Eroare API LiveKit:", e);
     }
+
+    const token = await at.toJwt();
+    return NextResponse.json({ token });
 }
