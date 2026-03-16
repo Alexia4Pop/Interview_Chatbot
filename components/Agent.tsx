@@ -33,7 +33,7 @@ const Agent = ({
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const [lastMessage, setLastMessage] = useState<string>("");
+    //const [lastMessage, setLastMessage] = useState<string>("");
 
     useEffect(() => {
         const onCallStart = () => {
@@ -83,9 +83,9 @@ const Agent = ({
     }, []);
 
     useEffect(() => {
-        if (messages.length > 0) {
+        /*if (messages.length > 0) {
             setLastMessage(messages[messages.length - 1].content);
-        }
+        }*/
 
         const handleGenerateFeedback = async (messages: SavedMessage[]) => {
             console.log("handleGenerateFeedback");
@@ -124,6 +124,7 @@ const Agent = ({
                     userid: userId,
                 },
             });
+            console.log("userid", userId);
         } else {
             let formattedQuestions = "";
             if (questions) {
@@ -145,7 +146,7 @@ const Agent = ({
         vapi.stop();
     };
 
-    const latestMessages = messages[messages.length - 1]?.content;
+    const lastMessage = messages[messages.length - 1]?.content;
     const isCallInactiveOrFinished = callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
 
     return (
