@@ -122,7 +122,7 @@ const Agent = ({
             await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
                 variableValues: {
                     username: userName,
-                    userid: "ID_PROBA_123",
+                    userid: userId,
                 },
             });
             console.log("userid", userId);
