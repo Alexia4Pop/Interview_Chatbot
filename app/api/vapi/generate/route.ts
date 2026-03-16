@@ -19,8 +19,11 @@ export async function POST(request: Request) {
 
         const { type, role, level, techstack, amount, userid } = args;
 
+        const systemUserId = body.message?.assistant?.variableValues?.userid;
+        const finalUserId = systemUserId || args.userid || "guest_vapi";
+
         console.log(`--- DATE EXTRASE ---`);
-        console.log(`Role: ${role}, Level: ${level}, Amount: ${amount}, UserID: ${userid}`);
+        console.log(`Role: ${role}, Level: ${level}, Amount: ${amount}, UserID: ${finalUserId}`);
 
         const { text: questions } = await generateText({
             model: groq("llama-3.3-70b-versatile"),
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
             level: level,
             techstack: techstack.split(","),
             questions: JSON.parse(cleanedQuestions),
-            userId: userid,
+            userId: finalUserId,
             finalized: true,
             coverImage: getRandomInterviewCover(),
             createdAt: new Date().toISOString(),
