@@ -1,10 +1,11 @@
 "use server";
 
-import { generateObject } from "ai";
+import {generateText} from "ai";
 
 import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
 import {groq} from "@ai-sdk/groq";
+import {text} from "node:stream/consumers";
 
 export async function createFeedback(params: CreateFeedbackParams) {
     const { interviewId, userId, transcript, feedbackId } = params;
@@ -17,13 +18,16 @@ export async function createFeedback(params: CreateFeedbackParams) {
             )
             .join("");
 
-        const { object } = await generateObject({
+        const { text } = await generateText({
             model: groq("llama-3.3-70b-versatile"),
-            schema: feedbackSchema,
+            //schema: feedbackSchema,
             prompt: `
         You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
         Transcript:
         ${formattedTranscript}
+        
+        SCHEMA TO FOLLOW (Return only JSON matching this):
+        ${JSON.stringify(feedbackSchema)} 
 
         Please score the candidate from 0 to 100 in the following areas. Do not add categories other than the ones provided:
         - **Communication Skills**: Clarity, articulation, structured responses.
@@ -36,14 +40,18 @@ export async function createFeedback(params: CreateFeedbackParams) {
                 "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
         });
 
+        const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        const resultObject = JSON.parse(cleanedText);
+
         const feedback = {
             interviewId: interviewId,
             userId: userId,
-            totalScore: object.totalScore,
-            categoryScores: object.categoryScores,
-            strengths: object.strengths,
-            areasForImprovement: object.areasForImprovement,
-            finalAssessment: object.finalAssessment,
+            totalScore: resultObject.totalScore,
+            categoryScores: resultObject.categoryScores,
+            strengths: resultObject.strengths,
+            areasForImprovement: resultObject.areasForImprovement,
+            finalAssessment: resultObject.finalAssessment,
             createdAt: new Date().toISOString(),
         };
 
