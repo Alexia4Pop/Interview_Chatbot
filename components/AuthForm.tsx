@@ -113,7 +113,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
                         width={32}
                         height={38}
                     />*/}
-                    <h2 className="text-primary-100">PrepWise</h2>
+                    <h2 className="text-primary-100">AI Interviewer</h2>
                 </div>
 
                 <h3>Practice job interview</h3>
