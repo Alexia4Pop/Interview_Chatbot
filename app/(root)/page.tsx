@@ -19,17 +19,35 @@ const Page = async () => {
     return (
         <>
             <section className="card-cta">
-                <div className="flex flex-col gap-6 max-w-lg">
-                    <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
-                    <p className="text-lg">
-                        Practice on real interview questions and get instant feedback
-                    </p>
-                    <Button asChild className="btn-primaty max-sm:w-full">
-                        <Link href="/interview">Start an Interview</Link>
-                    </Button>
-                </div>
+                        {/* Left Side: Main Content (Tightened) */}
+                <div className="flex flex-col md:flex-row items-center gap-16 px-8 py-12 max-w-7xl mx-auto">
 
-                <Image src="/robot.png" alt="robo-dude" width={400} height={400} className="max-sm:hidden" />
+                    {/* Left Side: Main Content (2/3 Width) */}
+                    <div className="md:basis-2/3 flex flex-col gap-10">
+                        <div className="flex flex-col gap-4">
+                            <h2 className="text-4xl font-bold leading-tight text-white">
+                                Get Interview-Ready with <span className="font-bold not-italic text-purple-400">AI-Powered </span>
+                                Practice & Feedback
+                            </h2>
+                            <p className="text-xl text-gray-400">
+                                Practice on real interview questions and get instant feedback.
+                            </p>
+                        </div>
+
+                        <Button asChild className="w-fit px-8 py-6 text-md rounded-xl bg-purple-400 transition-all shadow-lg shadow-purple-500/20 font-semibold">
+                            <Link href="/interview">Start an Interview</Link>
+                        </Button>
+                    </div>
+
+                    {/* Right Side: Slogan (1/3 Width) */}
+                    <div className="md:basis-1/3 text-right">
+                        <h2 className="text-4xl font-bold leading-snug text-[#F0CC38] opacity-80">
+                            Customized topics for <span className="font-bold not-italic text-white">any </span>
+                            professional role.
+                        </h2>
+                    </div>
+
+                </div>
             </section>
 
             <section className="flex flex-col gap-6 mt-8">
@@ -49,8 +67,7 @@ const Page = async () => {
             <section className="flex flex-col gap-6 mt-8">
                 <h2>Take an Interview</h2>
 
-                <div className="interview-sections">
-                    <div className="interview-sections">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 w-full max-w-7x">
                         {hasUpcomingInterviews ? (
                             latestInterviews?.map((interview) => (
                                 <InterviewCard {...interview} key={interview.id}/>
@@ -59,9 +76,6 @@ const Page = async () => {
                             <p>There are no new interviews available</p>
                         )}
                     </div>
-
-                    {/*<p>You haven&apos;t taken any interviews yet</p>*/}
-                </div>
             </section>
         </>
     )

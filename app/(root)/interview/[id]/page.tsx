@@ -16,7 +16,7 @@ const Page = async ( { params }: RouteParams) => {
 
     return (
         <>
-            <div className={"flex flex-row gap-4 justify-between"}>
+            <div className={"flex flex-row gap-4 justify-between pb-10"}>
                 <div className={"flex flex-row gap-4 items-center max-sm:flex-col"}>
                     <div className={"flex flex-row gap-4 items-center"}>
                         <Image
