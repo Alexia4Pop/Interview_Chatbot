@@ -5,7 +5,7 @@ selected topic.
 
 ---
 
-## 🚀 Live Demo
+## Live Demo
 **https://interviewaichatbot.vercel.app**
 
 ---
@@ -21,7 +21,7 @@ selected topic.
 
 ---
 
-## 🛠️ Technical Stack
+## Technical Stack
 - **Frontend:** Next.js, TypeScript, Tailwind CSS.
 - **AI Integration:** Vercel AI SDK, Groq.
 - **Backend/Storage:** Firebase.
